@@ -1,0 +1,24 @@
+# Python standard
+__pycache__/
+*.py[cod]
+*$py.class
+
+# VS Code
+.vscode/
+
+# Project Data (Large files)
+Data/*.csv
+Data/*.rar
+Data/*.zip
+
+# Analysis Results (Generated files)
+# Assuming we don't want to track every backtest result csv
+*_trades.csv
+# But we might want to keep the daily summary if they are small, 
+# strictly speaking, generated artifacts should be ignored.
+# I will ignore them to keep the repo clean.
+QJTP/*.csv
+!QJTP/strategy.py
+
+# Gemini Agent temp files
+.gemini/
