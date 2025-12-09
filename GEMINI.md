@@ -6,7 +6,14 @@ This project focuses on developing and backtesting single-factor intraday strate
 
 *   **`CTA_BT/`**: Contains the core backtesting engine.
     *   `CTA_BTv3.py`: The main script defining the `BaseStrategy` class and the `run_backtest` driver function. It handles data iteration, PnL calculation, and plotting.
-*   **`Data/`**: Stores historical intraday minute-level data files in CSV format (e.g., `IC_20160104.csv`). Files appear to be named `[Symbol]_[Date].csv`. Don't change the files in this folder anytime.
+*   **`Data/`**: Stores historical intraday minute-level data files in CSV format (e.g., `IC_20160104.csv`). Files appear to be named `[Symbol]_[Date].csv`. Don't change the files in this folder anytime. Columns include:
+   1. MinInt: represents the minute of the day(240 minutes a day, range from 931 to 1500).
+   2. open_price: The price at which the instrument opened trading during that specific minute.
+   3. close_price: The price at which the instrument closed trading at the end of that specific minute.
+   4. high_price: The highest price reached by the instrument during that specific minute.
+   5. low_price: The lowest price reached by the instrument during that specific minute.
+   6. volume: The total number of contracts or shares traded during that specific minute.
+   7. open_interest: The total number of outstanding derivative contracts that have not been closed out or delivered at that specific minute.
 *   **`QJTP/`**: Directory for specific strategy implementations.
     *   `strategy.py`: An example implementation of a strategy (`MinStrategy`) inheriting from `BaseStrategy`.
     *   `*_trades.csv`, `*.csv`: Output files containing trade logs and daily return summaries.
@@ -35,8 +42,11 @@ This project focuses on developing and backtesting single-factor intraday strate
 2.  **Implementation & Backtesting**:
     *   **Write Strategy**: Develop the strategy logic within the framework.
     *   **Backtest**: Conduct backtesting using `CTA_BTv3.py` to validate performance and logic.
-    
-3.  **Version Control**:
+
+3.  **Documentation**:
+    *   **Strategy Explanation**: Create a `Strategy_Explanation.md` file in the strategy folder. This file must explain the strategy logic, indicators, and trading rules in **Chinese**, following the structure of `QJTP/Strategy_Explanation.md` (Core Idea, Indicator Calculation, Trading Logic, Summary).
+
+4.  **Version Control**:
     *   **Git Management**: Use Git to strictly manage strategy versions, ensuring a history of improvements and experimental branches is maintained.
 *   After completing a full backtest, synchronize the related code, strategy implementation, and backtest results to GitHub (push to the remote repository) to preserve version history and backtest traceability.
 

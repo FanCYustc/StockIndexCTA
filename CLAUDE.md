@@ -6,7 +6,14 @@ This project focuses on developing and backtesting single-factor intraday strate
 
 *   **`CTA_BT/`**: Contains the core backtesting engine.
     *   `CTA_BTv3.py`: The main script defining the `BaseStrategy` class and the `run_backtest` driver function. It handles data iteration, PnL calculation, and plotting.
-*   **`Data/`**: Stores historical intraday minute-level data files in CSV format (e.g., `IC_20160104.csv`). Files appear to be named `[Symbol]_[Date].csv`.
+*   **`Data/`**: Stores historical intraday minute-level data files in CSV format (e.g., `IC_20160104.csv`). Files appear to be named `[Symbol]_[Date].csv`. Don't change the files in this folder anytime. Columns include:
+   1. MinInt: represents the minute of the day(240 minutes a day, range from 931 to 1500).
+   2. open_price: The price at which the instrument opened trading during that specific minute.
+   3. close_price: The price at which the instrument closed trading at the end of that specific minute.
+   4. high_price: The highest price reached by the instrument during that specific minute.
+   5. low_price: The lowest price reached by the instrument during that specific minute.
+   6. volume: The total number of contracts or shares traded during that specific minute.
+   7. open_interest: The total number of outstanding derivative contracts that have not been closed out or delivered at that specific minute.
 *   **`QJTP/`**: Directory for specific strategy implementations.
     *   `strategy.py`: An example implementation of a strategy (`MinStrategy`) inheriting from `BaseStrategy`.
     *   `*_trades.csv`, `*.csv`: Output files containing trade logs and daily return summaries.

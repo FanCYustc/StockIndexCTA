@@ -16,9 +16,11 @@ class ACStrategyVec(BaseStrategy):
     """
     Vectorized version of ACStrategy for high performance optimization.
     """
-    symbol = "IM"
-    name = f'{symbol}_AC_Vec'
-    min_date = 20220101
+    symbol = "IF"
+    n1 = 5
+    n2 = 34
+    name = f'{symbol}_AC_{n1}_{n2}'
+    min_date = 20170101
 
     def getOrgData(self):
         # Using relative path assuming execution from root or handling paths correctly
@@ -33,8 +35,7 @@ class ACStrategyVec(BaseStrategy):
         self.closePrice = arr[:, 2]
 
         close = pd.Series(self.closePrice)
-        n1 = getattr(self, 'n1', 5)
-        n2 = getattr(self, 'n2', 10)
+
         
         # Vectorized AC calculation
         # AO = SMA(Median Price, 5) - SMA(Median Price, 34)
@@ -48,6 +49,9 @@ class ACStrategyVec(BaseStrategy):
         # Let's stick strictly to the original logic:
         # a[i] = close[i] - close[i-n1]
         # c[i] = close[i] - close[i-n2]
+
+        n1 = self.n1
+        n2 = self.n2
         
         # Using pandas shift for convenience
         a = close - close.shift(n1)
