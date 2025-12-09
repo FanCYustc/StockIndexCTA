@@ -9,7 +9,7 @@ class ACStrategy(BaseStrategy):
 
     symbol = "IM"
     name = f'{symbol}_AC'
-    min_date = 20160101
+    min_date = 20220101
 
     def getOrgData(self):
         path = fr"E:\StockIndexCTA\Data\{self.symbol}_{self.td}.csv"
@@ -22,8 +22,8 @@ class ACStrategy(BaseStrategy):
         self.closePrice = arr[:, 2]
 
         close = self.closePrice
-        n1 = 5
-        n2 = 12
+        n1 = getattr(self, 'n1', 5)  # 超参数
+        n2 = getattr(self, 'n2', 10)
         
         a = np.full_like(close, np.nan)
         c = np.full_like(close, np.nan)
@@ -34,7 +34,6 @@ class ACStrategy(BaseStrategy):
         self.ac_series = a - c
 
     def GetSig(self, i):
-        # 保持在日内的前 50 分钟不交易以避免噪音
         if i < 20:
             self.prePosition = self.position
             self.position = 0

@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "auto_consult": false,
+  "cli_command": "gemini",
+  "timeout": 300,
+  "rate_limit_delay": 2.0,
+  "max_context_length": 4000,
+  "log_consultations": true,
+  "model": "gemini-3-pro-preview",
+  "sandbox_mode": false,
+  "debug_mode": false,
+  "include_history": true,
+  "max_history_entries": 10
+}

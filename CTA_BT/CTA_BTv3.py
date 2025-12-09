@@ -90,7 +90,7 @@ def run_backtest(strategy_cls):
         ax.set_xticklabels(dates[::step], rotation=45, fontsize=8)
         ax.grid(True, linestyle='--', alpha=0.6) 
         plt.tight_layout()
-        plt.pause(0.025)
+        plt.pause(0.02)
 
     plt.ioff()
 

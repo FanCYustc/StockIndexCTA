@@ -22,3 +22,4 @@ QJTP/*.csv
 
 # Gemini Agent temp files
 .gemini/
+AC_strategy/*.csv

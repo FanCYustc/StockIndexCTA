@@ -1,12 +1,12 @@
 # StockIndexCTA
 
-This project is a Python-based Quantitative CTA (Commodity Trading Advisor) backtesting framework designed for Stock Index Futures (e.g., IM, IF, IC). It allows for defining trading strategies, running backtests over historical intraday data, and visualizing cumulative returns.
+This project focuses on developing and backtesting single-factor intraday strategies for individual futures using minute-level time series data. It is a Python-based CTA backtesting framework for Stock Index Futures (e.g., IM, IF, IC). The framework allows defining trading strategies, running minute-level backtests over historical intraday data, and visualizing cumulative returns.
 
 ## Project Structure
 
 *   **`CTA_BT/`**: Contains the core backtesting engine.
     *   `CTA_BTv3.py`: The main script defining the `BaseStrategy` class and the `run_backtest` driver function. It handles data iteration, PnL calculation, and plotting.
-*   **`Data/`**: Stores historical intraday data files in CSV format (e.g., `IC_20160104.csv`). Files appear to be named `[Symbol]_[Date].csv`.
+*   **`Data/`**: Stores historical intraday minute-level data files in CSV format (e.g., `IC_20160104.csv`). Files appear to be named `[Symbol]_[Date].csv`. Don't change the files in this folder anytime.
 *   **`QJTP/`**: Directory for specific strategy implementations.
     *   `strategy.py`: An example implementation of a strategy (`MinStrategy`) inheriting from `BaseStrategy`.
     *   `*_trades.csv`, `*.csv`: Output files containing trade logs and daily return summaries.
@@ -38,6 +38,7 @@ This project is a Python-based Quantitative CTA (Commodity Trading Advisor) back
     
 3.  **Version Control**:
     *   **Git Management**: Use Git to strictly manage strategy versions, ensuring a history of improvements and experimental branches is maintained.
+*   After completing a full backtest, synchronize the related code, strategy implementation, and backtest results to GitHub (push to the remote repository) to preserve version history and backtest traceability.
 
 ## Coding Standards
 
@@ -50,15 +51,12 @@ This project is a Python-based Quantitative CTA (Commodity Trading Advisor) back
 *   Python 3.x
 *   Required libraries: `pandas`, `numpy`, `matplotlib`, `scikit-learn` (used in `QJTP/strategy.py`).
 
-### 2. Running a Backtest
-To run the example strategy provided in `QJTP`:
+### 2. Running the Backtester
 
-```bash
-python QJTP/strategy.py
-```
+using the annaconda environment "base"
 
 ### 3. Creating a New Strategy
-1.  Create a new Python file (or folder).
+1.  Create a new Python file (or folder) in the root folder.
 2.  Import `BaseStrategy` and `run_backtest` from `CTA_BT.CTA_BTv3`.
     *   *Note: You may need to adjust `sys.path` if your script is not in the root.*
 3.  Define a class inheriting from `BaseStrategy`.
