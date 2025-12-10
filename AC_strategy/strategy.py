@@ -7,7 +7,7 @@ import pandas as pd
 
 class ACStrategy(BaseStrategy):
 
-    symbol = "IM"
+    symbol = "IF"
     n1 = 35
     n2 = 135
     name = f'{symbol}_AC_{n1}_{n2}'
@@ -45,10 +45,6 @@ class ACStrategy(BaseStrategy):
         ac_series = ao - sma_ao
         self.ac_series = ac_series.values # numpy array
         
-        # 4. Trend Filter (MA60)
-        ma_trend = pd.Series(self.closePrice).rolling(window=60).mean()
-        self.ma_trend = ma_trend.values
-
         # --- Vectorized Logic Preparation ---
         
         # Pre-calculate shifted AC for comparison
@@ -80,25 +76,19 @@ class ACStrategy(BaseStrategy):
         sell_cond_pos = (ac > 0) & is_falling_1 & is_falling_2 & is_falling_3
         raw_sell_signal = (sell_cond_neg | sell_cond_pos)
         
-        # Trend Conditions
-        trend_up = (self.closePrice > self.ma_trend)
-        trend_down = (self.closePrice < self.ma_trend)
-        
         # --- State Machine Simulation (Fast Loop) ---
         # Initialize position array
         pos_arr = np.zeros(len(ac))
         current_pos = 0.0
         
-        # We start from max(n2, 60) to avoid NaNs
-        start_idx = max(n2, 60)
+        # We start from n2 to avoid NaNs
+        start_idx = n2
         
         # Pre-extract arrays for speed (avoiding self lookups in loop)
         ac_vals = ac
         p1_vals = p1
         buy_sigs = raw_buy_signal.astype(bool)
         sell_sigs = raw_sell_signal.astype(bool)
-        t_up = trend_up.astype(bool)
-        t_down = trend_down.astype(bool)
         
         for i in range(start_idx, len(ac)):
             
@@ -109,11 +99,11 @@ class ACStrategy(BaseStrategy):
                 current_pos = 0
                 
             # 2. Entry Logic
-            # Buy if signal + trend up
-            if buy_sigs[i] and t_up[i]:
+            # Buy if signal
+            if buy_sigs[i]:
                 current_pos = 1
-            # Sell if signal + trend down
-            elif sell_sigs[i] and t_down[i]:
+            # Sell if signal
+            elif sell_sigs[i]:
                 current_pos = -1
             
             pos_arr[i] = current_pos
@@ -121,12 +111,6 @@ class ACStrategy(BaseStrategy):
         self.target_positions = pos_arr
 
     def GetSig(self, i):
-        # Extremely fast lookup
-        if i < 60:
-            self.prePosition = self.position
-            self.position = 0
-            return
-
         self.prePosition = self.position
         self.position = self.target_positions[i]
 
