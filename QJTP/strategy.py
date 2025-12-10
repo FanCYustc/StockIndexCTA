@@ -2,7 +2,6 @@
 
 import sys
 sys.path.append(r"E:\StockIndexCTA")
-
 from CTA_BT.CTA_BTv3 import BaseStrategy, run_backtest
 import numpy as np
 import pandas as pd

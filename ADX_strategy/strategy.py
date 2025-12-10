@@ -1,0 +1,134 @@
+import sys
+sys.path.append(r"E:\StockIndexCTA")
+
+from CTA_BT.CTA_BTv3 import BaseStrategy, run_backtest
+import numpy as np
+import pandas as pd
+
+class ADXStrategy(BaseStrategy):
+    # Strategy settings
+    symbol = "IF"
+    N = 14
+    ADX_THRESHOLD = 40
+    name = f'{symbol}_ADX_{N}'
+    min_date = 20220701
+
+    def getOrgData(self):
+        path = fr"E:\StockIndexCTA\Data\{self.symbol}_{self.td}.csv"
+        self.raw_data = pd.read_csv(path)
+
+    def prepare_data(self):
+        arr = self.raw_data.values
+        
+        # Required by BaseStrategy
+        self.openPrice = arr[:, 1]
+        self.closePrice = arr[:, 2]
+        self.highPrice = arr[:, 3]
+        self.lowPrice = arr[:, 4]
+        
+        # --- Indicator Calculation ---
+        
+        # 1. TR (True Range)
+        prev_close = pd.Series(self.closePrice).shift(1)
+        tr1 = pd.Series(self.highPrice) - pd.Series(self.lowPrice)
+        tr2 = (pd.Series(self.highPrice) - prev_close).abs()
+        tr3 = (prev_close - pd.Series(self.lowPrice)).abs()
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        
+        # 2. MTR = EMA(TR, n)
+        mtr = tr.ewm(span=self.N, adjust=False).mean()
+        
+        # 3. DM
+        hd = pd.Series(self.highPrice) - pd.Series(self.highPrice).shift(1)
+        ld = pd.Series(self.lowPrice).shift(1) - pd.Series(self.lowPrice)
+        
+        plus_dm = np.where((hd > 0) & (hd > ld), hd, 0.0)
+        minus_dm = np.where((ld > 0) & (ld > hd), ld, 0.0)
+        
+        plus_dm = pd.Series(plus_dm, index=pd.Series(self.highPrice).index)
+        minus_dm = pd.Series(minus_dm, index=pd.Series(self.lowPrice).index)
+        
+        dmp = plus_dm.ewm(span=self.N, adjust=False).mean()
+        dmm = minus_dm.ewm(span=self.N, adjust=False).mean()
+        
+        # 4. DI
+        pdi = (dmp / mtr) * 100
+        mdi = (dmm / mtr) * 100
+        
+        # 5. DX
+        denom = pdi + mdi
+        dx = (abs(pdi - mdi) / denom) * 100
+        dx = dx.fillna(0)
+        
+        # 6. ADX = EMA(DX, n)
+        adx = dx.ewm(span=self.N, adjust=False).mean()
+        
+        # 7. MA (Simple Moving Average)
+        ma = pd.Series(self.closePrice).rolling(window=60).mean()
+        
+        # Store arrays for GetSig access
+        self.adx_arr = adx.values
+        self.ma_arr = ma.values
+        self.close_arr = self.closePrice
+
+    def GetSig(self, i):
+        # Warmup check
+        if i < self.N:
+            self.prePosition = self.position
+            return
+
+        # Current values
+        adx_val = self.adx_arr[i]
+        prev_adx_val = self.adx_arr[i-1]
+        
+        curr_close = self.close_arr[i]
+        curr_ma = self.ma_arr[i]
+
+        prev_close = self.close_arr[i-1]                                                                                
+        prev_ma = self.ma_arr[i-1]
+        
+        # Logic
+        sig = self.position 
+        
+        # 1. State Definitions with Buffer
+        # Price is significantly above MA
+        cross_up = (curr_close > curr_ma*(1+0.0004) and prev_close <= prev_ma*(1-0.0004))
+        cross_down = (curr_close < curr_ma*(1-0.0004) and prev_close >= prev_ma*(1+0.0004))
+        
+        # 2. Trend Filters
+        # is_trend_strong = (adx_val > self.ADX_THRESHOLD)
+        is_trend_rising = (adx_val > prev_adx_val) # Filter out decaying trends
+        
+        
+        if sig == 0:
+            # Entry Logic: 
+            # 1. Price Breaks MA with Buffer
+            # 2. ADX is strong 
+            # 3. ADX is rising (Trend is accelerating, not dying)
+            if cross_up and is_trend_rising:
+                sig = 1
+            elif cross_down and is_trend_rising:
+                sig = -1
+                
+        elif sig == 1:
+            # Long Exit: Price falls significantly below MA
+            # We use the lower buffer for exit as well to avoid noise
+            if cross_down:
+                if is_trend_rising:
+                    sig = -1 # Reverse
+                else:
+                    sig = 0  # Close
+                    
+        elif sig == -1:
+            # Short Exit: Price rises significantly above MA
+            if cross_up:
+                if is_trend_rising:
+                    sig = 1  # Reverse
+                else:
+                    sig = 0  # Close
+        
+        self.prePosition = self.position
+        self.position = sig
+
+if __name__ == "__main__":
+    run_backtest(ADXStrategy)
