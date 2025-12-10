@@ -8,8 +8,8 @@ import pandas as pd
 class ADXStrategy(BaseStrategy):
     # Strategy settings
     symbol = "IF"
-    N = 20
-    ADX_THRESHOLD = 25
+    N = 14
+    ADX_THRESHOLD = 28
     name = f'{symbol}_ADX_{N}'
     min_date = 20220701
 
