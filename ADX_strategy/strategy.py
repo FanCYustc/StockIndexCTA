@@ -9,7 +9,7 @@ class ADXStrategy(BaseStrategy):
     # Strategy settings
     symbol = "IF"
     N = 14
-    ADX_THRESHOLD = 40
+    ADX_THRESHOLD = 30
     name = f'{symbol}_ADX_{N}'
     min_date = 20220701
 
@@ -79,53 +79,49 @@ class ADXStrategy(BaseStrategy):
 
         # Current values
         adx_val = self.adx_arr[i]
-        prev_adx_val = self.adx_arr[i-1]
         
         curr_close = self.close_arr[i]
         curr_ma = self.ma_arr[i]
 
-        prev_close = self.close_arr[i-1]                                                                                
-        prev_ma = self.ma_arr[i-1]
-        
         # Logic
         sig = self.position 
         
-        # 1. State Definitions with Buffer
-        # Price is significantly above MA
-        cross_up = (curr_close > curr_ma*(1+0.0004) and prev_close <= prev_ma*(1-0.0004))
-        cross_down = (curr_close < curr_ma*(1-0.0004) and prev_close >= prev_ma*(1+0.0004))
+        # 1. Band Definitions (1 +/- 0.05%)
+        # 均线上下轨 (0.05% 缓冲区)
+        upper_band = curr_ma * (1 + 0.0005)
+        lower_band = curr_ma * (1 - 0.0005)
         
         # 2. Trend Filters
-        # is_trend_strong = (adx_val > self.ADX_THRESHOLD)
-        is_trend_rising = (adx_val > prev_adx_val) # Filter out decaying trends
-        
-        
+        # ADX强弱判断
+        is_trend_strong = (adx_val > self.ADX_THRESHOLD)
+
+        # 3. Trading Logic
         if sig == 0:
-            # Entry Logic: 
-            # 1. Price Breaks MA with Buffer
-            # 2. ADX is strong 
-            # 3. ADX is rising (Trend is accelerating, not dying)
-            if cross_up and is_trend_rising:
+            # Entry Logic (State-Based)
+            # 只要价格在通道外且趋势强，就入场
+            # Improved: Checks "Current State" rather than just "Crossover Moment"
+            if curr_close > upper_band and is_trend_strong:
                 sig = 1
-            elif cross_down and is_trend_rising:
+            elif curr_close < lower_band and is_trend_strong:
                 sig = -1
                 
         elif sig == 1:
-            # Long Exit: Price falls significantly below MA
-            # We use the lower buffer for exit as well to avoid noise
-            if cross_down:
-                if is_trend_rising:
-                    sig = -1 # Reverse
+            # Long Exit / Reverse
+            # 跌破下轨时进行判断
+            if curr_close < lower_band:
+                if is_trend_strong:
+                    sig = -1 # Reverse to Short
                 else:
-                    sig = 0  # Close
+                    sig = 0  # Close Position
                     
         elif sig == -1:
-            # Short Exit: Price rises significantly above MA
-            if cross_up:
-                if is_trend_rising:
-                    sig = 1  # Reverse
+            # Short Exit / Reverse
+            # 突破上轨时进行判断
+            if curr_close > upper_band:
+                if is_trend_strong:
+                    sig = 1  # Reverse to Long
                 else:
-                    sig = 0  # Close
+                    sig = 0  # Close Position
         
         self.prePosition = self.position
         self.position = sig
