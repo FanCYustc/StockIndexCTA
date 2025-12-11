@@ -6,70 +6,76 @@ import numpy as np
 import pandas as pd
 
 class AlligatorStrategy(BaseStrategy):
-    # Strategy settings
+    # 策略配置
     symbol = "IF"
     
-    # Default parameters from PDF (IV. Default Parameter Results)
-    FAST = 20
-    MID = 60
-    SLOW = 120
+    # 鳄鱼线默认参数 (来自研报)
+    FAST = 5
+    MID = 8
+    SLOW = 13
     
     name = f'{symbol}_Alligator_{FAST}_{MID}_{SLOW}'
-    min_date = 20220701
+    min_date = 20160101
 
     def getOrgData(self):
+        # 获取原始数据
         path = fr"E:\StockIndexCTA\Data\{self.symbol}_{self.td}.csv"
         self.raw_data = pd.read_csv(path)
 
     def prepare_data(self):
+        # 准备数据
         arr = self.raw_data.values
         
-        # Required by BaseStrategy
+        # 提取价格数据
         self.openPrice = arr[:, 1]
         self.closePrice = arr[:, 2]
         self.highPrice = arr[:, 3]
         self.lowPrice = arr[:, 4]
         
-        # --- Indicator Calculation ---
-        # MP := (HIGH + LOW) / 2
+        # --- 指标计算 ---
+        # MP (中价) := (最高价 + 最低价) / 2
         mp = (pd.Series(self.highPrice) + pd.Series(self.lowPrice)) / 2
         
-        # MEMA (Modified EMA / Smoothed Moving Average)
-        # Standard Alligator uses SMMA which is equivalent to EMA with alpha = 1/N
+        # MEMA (Modified EMA / 平滑移动平均线)
+        # 鳄鱼线使用SMMA，相当于alpha = 1/N的EMA
         
-        # LIPS: MEMA(MP, FAST)
+        # LIPS (嘴唇/绿线): MEMA(MP, FAST)
         self.lips = mp.ewm(alpha=1/self.FAST, adjust=False).mean().values
         
-        # TEETH: MEMA(MP, MID)
+        # TEETH (牙齿/红线): MEMA(MP, MID)
         self.teeth = mp.ewm(alpha=1/self.MID, adjust=False).mean().values
         
-        # JAW: MEMA(MP, SLOW)
+        # JAW (下巴/蓝线): MEMA(MP, SLOW)
         self.jaw = mp.ewm(alpha=1/self.SLOW, adjust=False).mean().values
         
         self.close_arr = self.closePrice
 
     def GetSig(self, i):
-        # Warmup check
+        # 暖身期检查 (确保有足够数据计算指标)
         if i < self.SLOW:
             self.prePosition = self.position
             self.position = 0
             return
 
-        # Current values
+        # 获取当前分钟的指标值
         price = self.close_arr[i]
         l = self.lips[i]
         t = self.teeth[i]
         j = self.jaw[i]
         
-   
-        # signal logic
+        # 信号逻辑 (来自研报):
+        # 买入信号: Price > Lips > Teeth > Jaw
+        # 卖出信号: Price < Lips < Teeth < Jaw
+        # 否则: 空仓 (市场震荡/无趋势)
+        
+        sig = 0 # 默认为空仓
         
         if price > l and l > t and t > j:
-            sig = 1
+            sig = 1 # 持有多仓
         elif price < l and l < t and t < j:
-            sig = -1
+            sig = -1 # 持有空仓
         else:
-            sig = 0
+            sig = 0 # 空仓
         
         self.prePosition = self.position
         self.position = sig
