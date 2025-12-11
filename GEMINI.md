@@ -36,19 +36,21 @@ This project focuses on developing and backtesting single-factor intraday strate
 
 ## Development Workflow
 
-1.  **Strategy Initialization**:
+1.  **Strategy Initialization & Documentation**:
     *   **Create Strategy Folder**: Create and name a new strategy folder based on the source material (e.g., specific research reports in `研究/研报/`) or as an iteration of a previous strategy. Naming should be descriptive.
+    *   **Draft Strategy Explanation**: **Before writing any code**, create a `Strategy_Explanation.md` file in the new folder. Explain the planned strategy logic, indicators, and trading rules in **Chinese**, following the structure of `QJTP/Strategy_Explanation.md` (Core Idea, Indicator Calculation, Trading Logic, Summary).
     
 2.  **Implementation & Backtesting**:
-    *   **Write Strategy**: Develop the strategy logic within the framework.
+    *   **Write Strategy**: Develop the strategy logic (`strategy.py`) within the framework, ensuring it implements the logic defined in the explanation document.
     *   **Backtest**: Conduct backtesting using `CTA_BTv3.py` to validate performance and logic.
 
-3.  **Documentation**:
-    *   **Strategy Explanation**: Create a `Strategy_Explanation.md` file in the strategy folder. This file must explain the strategy logic, indicators, and trading rules in **Chinese**, following the structure of `QJTP/Strategy_Explanation.md` (Core Idea, Indicator Calculation, Trading Logic, Summary).
+3.  **Maintenance & Synchronization**:
+    *   **Sync Documentation**: If the strategy code is modified (optimization, bug fixes), immediately update `Strategy_Explanation.md` to reflect the changes. The code and documentation must always remain consistent.
 
-4.  **Version Control**:
-    *   **Git Management**: Use Git to strictly manage strategy versions, ensuring a history of improvements and experimental branches is maintained.
-*   After completing a full backtest, synchronize the related code, strategy implementation, and backtest results to GitHub (push to the remote repository) to preserve version history and backtest traceability.
+4.  **Logging & Version Control**:
+    *   **Git Management**: Use Git to strictly manage strategy versions.
+    *   **Changelog**: Organize a `CHANGELOG.md` in the strategy folder by summarizing the git commit logs related to that strategy.
+    *   **Push**: After completing a full backtest, synchronize the related code, strategy implementation, logs, and backtest results to GitHub to preserve version history and backtest traceability.
 
 ## Coding Standards
 

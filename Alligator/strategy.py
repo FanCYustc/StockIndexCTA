@@ -7,15 +7,15 @@ import pandas as pd
 
 class AlligatorStrategy(BaseStrategy):
     # 策略配置
-    symbol = "IF"
+    symbol = "IM"
     
     # 鳄鱼线参数
-    FAST = 5
-    MID = 8
-    SLOW = 13
+    FAST = 20
+    MID = 60
+    SLOW = 120
     
     name = f'{symbol}_Alligator_{FAST}_{MID}_{SLOW}'
-    min_date = 20160101
+    min_date = 20220701
 
     def getOrgData(self):
         # 获取原始数据
