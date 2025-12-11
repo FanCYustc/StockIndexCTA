@@ -67,14 +67,16 @@ class ADXStrategy(BaseStrategy):
         
         # 7. MA (简单移动平均线)
         ma = pd.Series(self.closePrice).rolling(window=60).mean()
-        
-        # 存储计算结果，供GetSig方法使用
+        # 可以改用EMA        
+
+
+        # 存储计算结果
         self.adx_arr = adx.values
         self.ma_arr = ma.values
         self.close_arr = self.closePrice
 
     def GetSig(self, i):
-        # 暖身期检查 (确保有足够数据计算指标)
+
         if i < self.N:
             self.prePosition = self.position
             return

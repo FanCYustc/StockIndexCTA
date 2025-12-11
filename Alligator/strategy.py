@@ -9,7 +9,7 @@ class AlligatorStrategy(BaseStrategy):
     # 策略配置
     symbol = "IF"
     
-    # 鳄鱼线默认参数 (来自研报)
+    # 鳄鱼线参数
     FAST = 5
     MID = 8
     SLOW = 13
@@ -36,8 +36,7 @@ class AlligatorStrategy(BaseStrategy):
         # MP (中价) := (最高价 + 最低价) / 2
         mp = (pd.Series(self.highPrice) + pd.Series(self.lowPrice)) / 2
         
-        # MEMA (Modified EMA / 平滑移动平均线)
-        # 鳄鱼线使用SMMA，相当于alpha = 1/N的EMA
+        # MEMA
         
         # LIPS (嘴唇/绿线): MEMA(MP, FAST)
         self.lips = mp.ewm(alpha=1/self.FAST, adjust=False).mean().values
@@ -63,10 +62,10 @@ class AlligatorStrategy(BaseStrategy):
         t = self.teeth[i]
         j = self.jaw[i]
         
-        # 信号逻辑 (来自研报):
+        # 信号逻辑:
         # 买入信号: Price > Lips > Teeth > Jaw
         # 卖出信号: Price < Lips < Teeth < Jaw
-        # 否则: 空仓 (市场震荡/无趋势)
+        # 否则: 空仓
         
         sig = 0 # 默认为空仓
         

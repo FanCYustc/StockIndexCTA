@@ -28,11 +28,11 @@ class ACStrategy(BaseStrategy):
 
         # --- 向量化指标计算 ---
         
-        # 1. 中间价 (Median Price)
+        # 1. 中间价
         median_price = (self.highPrice + self.lowPrice) / 2.0
         mp_series = pd.Series(median_price)
 
-        # 2. AO指标 (Awesome Oscillator)
+        # 2. AO
         n1 = self.n1
         n2 = self.n2
         
@@ -40,14 +40,14 @@ class ACStrategy(BaseStrategy):
         sma_slow = mp_series.rolling(window=n2).mean()
         ao = sma_fast - sma_slow
 
-        # 3. AC指标 (Accelerator Oscillator)
+        # 3. AC
         sma_ao = ao.rolling(window=n1).mean()
         ac_series = ao - sma_ao
-        self.ac_series = ac_series.values # numpy array
+        self.ac_series = ac_series.values 
         
         # --- 向量化逻辑准备 ---
         
-        # 预计算平移后的AC值用于比较
+        # 预计算平移后的AC值
         ac = self.ac_series
         p1 = np.roll(ac, 1) # p1[i] = ac[i-1]
         p2 = np.roll(ac, 2)
@@ -56,7 +56,6 @@ class ACStrategy(BaseStrategy):
         # 处理NaN/边界问题
         p1[:1] = np.nan; p2[:2] = np.nan; p3[:3] = np.nan
         
-        # 1. 条件辅助 (布尔数组)
         is_rising_1 = (ac > p1)
         is_rising_2 = (p1 > p2)
         is_rising_3 = (p2 > p3)
@@ -65,7 +64,7 @@ class ACStrategy(BaseStrategy):
         is_falling_2 = (p1 < p2)
         is_falling_3 = (p2 < p3)
         
-        # 2. 入场条件 (向量化)
+        # 2. 入场条件
         # 买入: (正区域 & 2连涨) 或 (负区域 & 3连涨)
         buy_cond_pos = (ac > 0) & is_rising_1 & is_rising_2
         buy_cond_neg = (ac < 0) & is_rising_1 & is_rising_2 & is_rising_3
@@ -76,15 +75,12 @@ class ACStrategy(BaseStrategy):
         sell_cond_pos = (ac > 0) & is_falling_1 & is_falling_2 & is_falling_3
         raw_sell_signal = (sell_cond_neg | sell_cond_pos)
         
-        # --- 状态机模拟 (快速循环) ---
-        # 初始化持仓数组
+        # --- 状态机模拟 ---
+        # 初始化
         pos_arr = np.zeros(len(ac))
         current_pos = 0.0
         
-        # 从n2开始以避免NaN
         start_idx = n2
-        
-        # 预提取数组以提高速度 (避免循环中的self查找)
         ac_vals = ac
         p1_vals = p1
         buy_sigs = raw_buy_signal.astype(bool)
