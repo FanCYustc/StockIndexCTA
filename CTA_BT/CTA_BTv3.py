@@ -110,8 +110,8 @@ def run_backtest(strategy_cls):
     rslt = []
     all_trade_logs = []
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.set_title(f'Cumulative Return - {strategy_cls.name}') 
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=True, gridspec_kw={'height_ratios': [3, 1]}) # 3:1 ratio for cum_ret vs drawdown
+    ax1.set_title(f'Cumulative Return - {strategy_cls.name}') 
     plt.ion()
 
     for td in tradedates:
@@ -130,17 +130,17 @@ def run_backtest(strategy_cls):
         
         all_trade_logs.extend(stg.trade_logs)
 
-        ax.clear()
+        ax1.clear() # Clear ax1 instead of ax
         dates = [str(x[0]) for x in rslt]
         rets = np.cumsum(np.array([x[1] for x in rslt]))
 
-        ax.plot(dates, rets, linewidth=1, color='#8B0000', label='Cumulative Return') 
-        ax.set_title(f'Cumulative Return - {strategy_cls.name} (Current Date: {td})') 
+        ax1.plot(dates, rets, linewidth=1, color='#8B0000', label='Cumulative Return') 
+        ax1.set_title(f'Cumulative Return - {strategy_cls.name} (Current Date: {td})') 
         
         step = max(1, len(dates)//10)
-        ax.set_xticks(range(0, len(dates), step))
-        ax.set_xticklabels(dates[::step], rotation=45, fontsize=8)
-        ax.grid(True, linestyle='--', alpha=0.6) 
+        ax1.set_xticks(range(0, len(dates), step))
+        ax1.set_xticklabels(dates[::step], rotation=45, fontsize=8)
+        ax1.grid(True, linestyle='--', alpha=0.6) 
         plt.tight_layout()
         plt.pause(0.015)
 
@@ -210,10 +210,67 @@ def run_backtest(strategy_cls):
 
     save_path = os.path.join(result_dir, f"{strategy_cls.name}.csv")
     df.to_csv(save_path, index=False)
+    print(f"所有交易记录已保存到：{trade_save_path}")
+
+    # --- Calculate enhanced trade metrics ---
+    total_trades = len(trade_df)
+    if total_trades > 0:
+        winning_trades = trade_df[trade_df['pnl'] > 0]
+        losing_trades = trade_df[trade_df['pnl'] < 0]
+
+        num_winning_trades = len(winning_trades)
+        num_losing_trades = len(losing_trades)
+
+        win_rate = (num_winning_trades / total_trades) * 100 if total_trades > 0 else 0
+
+        avg_win_pnl = winning_trades['pnl'].mean() if num_winning_trades > 0 else 0
+        avg_loss_pnl = losing_trades['pnl'].mean() if num_losing_trades > 0 else 0
+
+        # P/L Ratio: Average Profit / Average Loss (absolute value)
+        pl_ratio = abs(avg_win_pnl / avg_loss_pnl) if avg_loss_pnl != 0 else np.nan
+
+        # Avg Net Profit per trade
+        total_net_pnl = trade_df['pnl'].sum()
+        avg_net_profit = total_net_pnl / total_trades
+    else:
+        win_rate = 0
+        pl_ratio = np.nan
+        avg_net_profit = 0
+    # --- End enhanced trade metrics calculation ---
+    
+    # -------------------------------
+    # 指标计算和日收益保存
+    # -------------------------------
+    annual_ret = df["cum_ret"].iloc[-1] * 242 / total_days
+    sharpe = (df["ret"].mean() / df["ret"].std()) * np.sqrt(242) if df["ret"].std() != 0 else np.nan 
+
+    # ===== 最大回撤 =====
+    cum_max = df["cum_ret"].cummax()
+    drawdown = df["cum_ret"] - cum_max
+    max_drawdown = -drawdown.min()
+
+    calmar = annual_ret / max_drawdown if max_drawdown != 0 else np.nan
+
+    start_date = str(df["date"].iloc[0])
+    end_date = str(df["date"].iloc[-1])
+    days = len(df)
+
+    save_path = os.path.join(result_dir, f"{strategy_cls.name}.csv")
+    df.to_csv(save_path, index=False)
     print(f"日结果已保存到：{save_path}")
 
-    ax.set_title(f'Cumulative Return - {strategy_cls.name}')
-    ax.plot(df["date"].astype(str), df["cum_ret"], linewidth=1, color='#8B0000')
+    # Final Cumulative Return Plot (ax1)
+    ax1.set_title(f'累计收益曲线 - {strategy_cls.name}')
+    ax1.plot(df["date"].astype(str), df["cum_ret"], linewidth=1, color='#8B0000', label='累计收益')
+    ax1.legend(loc='upper left')
+
+    # Underwater Plot (ax2)
+    ax2.plot(df["date"].astype(str), drawdown, linewidth=1, color='blue', label='资金回撤')
+    ax2.fill_between(df["date"].astype(str), drawdown, 0, facecolor='blue', alpha=0.3)
+    ax2.set_title('资金回撤曲线')
+    ax2.set_ylabel('回撤')
+    ax2.grid(True, linestyle='--', alpha=0.6)
+    ax2.legend(loc='upper left')
 
     text_str = (
         f"年化收益率: {annual_ret:.2%}\n"
@@ -226,16 +283,16 @@ def run_backtest(strategy_cls):
         f"{start_date} - {end_date}({days}天)"
     )
 
-    ax.text(0.01, 0.97, text_str, transform=ax.transAxes,
+    ax1.text(0.01, 0.97, text_str, transform=ax1.transAxes,
              verticalalignment='top', fontsize=9,
              bbox=dict(facecolor='white', alpha=0.9, edgecolor='none', boxstyle='round,pad=0.5')) 
 
     step = max(1, len(df)//10)
     xtick_labels = df["date"].astype(str)[::step]
-    ax.set_xticks(range(0, len(df), step))
-    ax.set_xticklabels(xtick_labels, rotation=45, fontsize=8)
+    ax1.set_xticks(range(0, len(df), step))
+    ax1.set_xticklabels(xtick_labels, rotation=45, fontsize=8) # Apply to ax1, as ax2 shares x-axis
 
-    ax.grid(True, linestyle='--', alpha=0.6)
+    ax1.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
     fig.canvas.draw()
     plt.show()
