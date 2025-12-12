@@ -64,9 +64,9 @@ class BollingerStrategy(BaseStrategy):
         sig = self.position # 默认维持原有仓位
 
         if close > upp:
-            sig = 1
-        elif close < downp:
             sig = -1
+        elif close < downp:
+            sig = 1
 
         self.prePosition = self.position
         self.position = sig
