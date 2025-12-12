@@ -15,7 +15,7 @@ class AlligatorStrategy(BaseStrategy):
     SLOW = 120
     
     name = f'{symbol}_Alligator_{FAST}_{MID}_{SLOW}'
-    min_date = 20220701
+    min_date = 20160101
 
     def getOrgData(self):
         # 获取原始数据

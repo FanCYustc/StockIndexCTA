@@ -11,7 +11,7 @@ class ADXStrategy(BaseStrategy):
     N = 16 # ADX计算周期
     ADX_THRESHOLD = 30 # ADX阈值
     name = f'{symbol}_ADX_{N}'
-    min_date = 20220701
+    min_date = 20160101
 
     def getOrgData(self):
         # 获取原始数据

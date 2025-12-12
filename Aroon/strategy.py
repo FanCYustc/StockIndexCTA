@@ -15,7 +15,7 @@ class AroonStrategy(BaseStrategy):
     LOWBAND = 30
     
     name = f'{symbol}_Aroon_{NDAY}'
-    min_date = 20220701
+    min_date = 20160101
 
     def getOrgData(self):
         # 获取原始数据

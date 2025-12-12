@@ -11,7 +11,7 @@ class MinStrategy(BaseStrategy):
     # 策略配置
     symbol = "IM"
     name = f'{symbol}_QJTP'
-    min_date = 20170101
+    min_date = 20160101
 
     def getOrgData(self):
         # 获取原始数据

@@ -162,4 +162,9 @@ def run_backtest(strategy_cls):
     fig.canvas.draw()
     plt.show()
 
+    # 保存图片
+    image_save_path = os.path.join(result_dir, f"{strategy_cls.name}.png")
+    fig.savefig(image_save_path)
+    print(f"累计收益图已保存到：{image_save_path}")
+
     return df

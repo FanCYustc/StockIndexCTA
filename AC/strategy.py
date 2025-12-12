@@ -11,7 +11,7 @@ class ACStrategy(BaseStrategy):
     n1 = 20
     n2 = 40
     name = f'{symbol}_AC_{n1}_{n2}'
-    min_date = 20220101
+    min_date = 20160101
 
     def getOrgData(self):
         path = fr"E:\StockIndexCTA\Data\{self.symbol}_{self.td}.csv"
