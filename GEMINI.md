@@ -21,28 +21,19 @@ This project focuses on developing and backtesting single-factor intraday strate
     *   `UpdateTD/`: Contains `tradedates.csv`, which provides the list of trading dates used by the backtester.
     *   `研报/`: Research reports (likely PDF/Docs).
 
-## Architecture
-
-1.  **Core Engine (`CTA_BTv3.py`)**:
-    *   **`BaseStrategy`**: Abstract base class. Manages state (`position`, `PNL`, `trade_records`) and basic return calculation (`CmpRet`).
-    *   **`run_backtest(strategy_cls)`**: The driver function. It reads the trading calendar, instantiates the strategy for each day, collects results, plots the cumulative return curve, and saves metrics (Sharpe, Calmar, Max Drawdown).
-
-2.  **Strategy Implementation**:
-    *   Strategies must inherit from `BaseStrategy`.
-    *   **Required Methods to Override**:
-        *   `getOrgData(self)`: Load data for the current day (`self.td`).
-        *   `prepare_data(self)`: Pre-process data (e.g., extract prices to numpy arrays).
-        *   `GetSig(self, i)`: Logic to calculate the target position for minute `i`.
-
 ## Development Workflow
 
 1.  **Strategy Initialization & Documentation**:
-    *   **Create Strategy Folder**: Create and name a new strategy folder based on the source material (e.g., specific research reports in `研究/研报/`) or as an iteration of a previous strategy. Naming should be descriptive.
+    *   **Create Strategy Folder**: Create and name a new strategy folder based on the source material (Shenwanhongyuan specific research reports in `研究/研报/`) or as an iteration of a previous strategy. Naming should be descriptive.
     *   **Draft Strategy Explanation**: **Before writing any code**, create a `Strategy_Explanation.md` file in the new folder. Explain the planned strategy logic, indicators, and trading rules in **Chinese**, following the structure of `QJTP/Strategy_Explanation.md` (Core Idea, Indicator Calculation, Trading Logic, Summary).
     
 2.  **Implementation & Backtesting**:
     *   **Write Strategy**: Develop the strategy logic (`strategy.py`) within the framework, ensuring it implements the logic defined in the explanation document.
+        *   **Reproduction Goal**: Strictly reproduce indicator logic and use **report default parameters** initially. Do not blindly optimize.
+        *   **Natural Out-of-Sample**: Leverage the time gap (report date vs. now) to test robustness on recent data. A factor performing well without tuning is highly valuable.
     *   **Backtest**: Conduct backtesting using `CTA_BTv3.py` to validate performance and logic.
+        *   **Standard**: Use minute-level data. Ignore slippage/fees for initial single-factor validation. Do not obsess over high Sharpe ratios; focus on factor validity and consistency.
+        *   **Iterative Process**: First reproduce the original logic. Only after establishing a baseline, experiment with alternative logics (e.g., Mean Reversion).
 
 3.  **Maintenance & Synchronization**:
     *   **Sync Documentation**: If the strategy code is modified (optimization, bug fixes), immediately update `Strategy_Explanation.md` to reflect the changes. The code and documentation must always remain consistent.
