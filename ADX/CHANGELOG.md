@@ -13,3 +13,8 @@
 - **Initialization**
   - Initialized ADX strategy structure.
   - Added backtest results.
+
+
+## 2025-12-12
+
+将信号触发逻辑反转，保存为IM_ADX_14

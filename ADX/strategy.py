@@ -9,7 +9,7 @@ class ADXStrategy(BaseStrategy):
     # 策略配置
     symbol = "IF"
     N = 14 # ADX计算周期
-    ADX_THRESHOLD = 28 # ADX阈值
+    ADX_THRESHOLD = 30 # ADX阈值
     name = f'{symbol}_ADX_{N}'
     min_date = 20220701
 
@@ -105,7 +105,7 @@ class ADXStrategy(BaseStrategy):
         elif cross_down and is_trend_strong:
             sig = -1 # 开空仓
         else:
-            sig = 0  # 平仓/空仓
+            sig = 0 # 平仓
         
         self.prePosition = self.position
         self.position = sig
