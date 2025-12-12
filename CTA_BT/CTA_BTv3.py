@@ -18,6 +18,8 @@ class BaseStrategy:
         self.position = 0
         self.prePosition = 0
         self.trade_records = []
+        self.active_trade_pnl = 0.0 # PnL accumulated for the current open trade
+        self.trade_logs = [] # Stores details of completed trades
 
     def CmpRet(self, nowClose, nowOpen):
         ret = self.prePosition * (nowClose / nowOpen - 1)
@@ -29,26 +31,76 @@ class BaseStrategy:
         self.getOrgData()
         self.prepare_data()
 
-        for i in range(start_minute, 229):
+        self.current_day_pnl = 0.0 # Initialize daily PnL
+        self.entry_price = None # Initialize entry price for trade tracking
+        self.entry_minute = None # Initialize entry minute for trade tracking
 
+        for i in range(start_minute, 229):
+            self.prePosition = self.position # Store the position *before* GetSig updates it for the current minute
             self.GetSig(i)
             
-            # 获取当前分钟的开盘价和收盘价
             nowOpen = self.openPrice[i]
             nowClose = self.closePrice[i]
 
+            # Calculate minute PnL
             ret = self.CmpRet(nowClose, nowOpen)
             self.PNL.append(ret)
+            
+            # Update current day's PnL
+            self.current_day_pnl += ret
 
-            if ret != 0:
-                self.trade_records.append([
-                    self.td,           # 交易日期
-                    i,                 # 分钟索引 (i)
-                    nowOpen,           # 开盘价
-                    nowClose,          # 收盘价
-                    self.prePosition,  # 持仓信号 (上一分钟的仓位)
-                    ret                # 分钟收益率
-                ])
+            # --- Trade Tracking Logic ---
+            if self.position != self.prePosition: # Position changed (trade entry/exit/reversal)
+                # If prePosition was not 0, it means an existing trade was closed or reversed
+                if self.prePosition != 0:
+                    exit_price = nowOpen if self.position == 0 else nowClose # If full exit, use open. If reversal, use close for segment
+                    entry_price = self.entry_price if hasattr(self, 'entry_price') else None
+
+                    # Only log if an entry price was recorded, otherwise it's just a position change from flat
+                    if entry_price is not None:
+                        # Log completed trade
+                        self.trade_logs.append({
+                            'entry_date': self.td,
+                            'entry_minute': self.entry_minute,
+                            'exit_date': self.td,
+                            'exit_minute': i,
+                            'entry_price': entry_price,
+                            'exit_price': exit_price,
+                            'position_size': self.prePosition, # The position size of the trade just closed
+                            'pnl': self.active_trade_pnl
+                        })
+                        
+                    self.active_trade_pnl = 0.0 # Reset for new/next trade
+                    self.entry_price = None # Clear entry details
+                    self.entry_minute = None # Clear entry details
+
+
+                # If new position is not 0, a new trade is opened
+                if self.position != 0:
+                    self.entry_price = nowOpen
+                    self.entry_minute = i
+            
+            # Accumulate PnL for the current active trade
+            if self.position != 0:
+                self.active_trade_pnl += ret
+
+        # Handle any open trade at the end of the day
+        if self.position != 0:
+            if hasattr(self, 'entry_price') and self.entry_price is not None:
+                self.trade_logs.append({
+                    'entry_date': self.td,
+                    'entry_minute': self.entry_minute,
+                    'exit_date': self.td, # End of day is exit
+                    'exit_minute': 229, # Last minute of the day
+                    'entry_price': self.entry_price,
+                    'exit_price': self.closePrice[228], # Use last close price of the day
+                    'position_size': self.position,
+                    'pnl': self.active_trade_pnl
+                })
+            self.active_trade_pnl = 0.0
+            self.entry_price = None
+            self.entry_minute = None
+        # --- End Trade Tracking Logic ---
 
 
 def run_backtest(strategy_cls):
@@ -56,7 +108,7 @@ def run_backtest(strategy_cls):
     tradedates = tradedates['TradingDayInt'].to_list()
 
     rslt = []
-    all_trade_records = [] 
+    all_trade_logs = []
 
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.set_title(f'Cumulative Return - {strategy_cls.name}') 
@@ -72,11 +124,11 @@ def run_backtest(strategy_cls):
             print(f"跳过 {td}, {strategy_cls.symbol} 无数据")
             continue
 
-        RET = np.sum(stg.PNL)
+        RET = np.sum(stg.PNL) # PNL is still used for daily return calculation
         rslt.append([td, RET])
         print(f"{td} 收益: {RET:.6f}")
         
-        all_trade_records.extend(stg.trade_records)
+        all_trade_logs.extend(stg.trade_logs)
 
         ax.clear()
         dates = [str(x[0]) for x in rslt]
@@ -102,11 +154,8 @@ def run_backtest(strategy_cls):
     df["cum_ret"] = np.cumsum(df["ret"])
     total_days = len(df)
     
-    # 保存分钟交易明细
-    trade_df = pd.DataFrame(
-        all_trade_records,
-        columns=["date", "minute_i", "open_price", "close_price", "position", "minute_ret"]
-    )
+    # 保存所有交易记录
+    trade_df = pd.DataFrame(all_trade_logs)
     
     strategy_file = inspect.getfile(strategy_cls)
     result_dir = os.path.dirname(strategy_file)
@@ -114,7 +163,33 @@ def run_backtest(strategy_cls):
     
     trade_save_path = os.path.join(result_dir, f"{strategy_cls.name}_trades.csv")
     trade_df.to_csv(trade_save_path, index=False)
-    print(f"分钟交易明细已保存到：{trade_save_path}")
+    print(f"所有交易记录已保存到：{trade_save_path}")
+
+    # --- Calculate enhanced trade metrics ---
+    total_trades = len(trade_df)
+    if total_trades > 0:
+        winning_trades = trade_df[trade_df['pnl'] > 0]
+        losing_trades = trade_df[trade_df['pnl'] < 0]
+
+        num_winning_trades = len(winning_trades)
+        num_losing_trades = len(losing_trades)
+
+        win_rate = (num_winning_trades / total_trades) * 100 if total_trades > 0 else 0
+
+        avg_win_pnl = winning_trades['pnl'].mean() if num_winning_trades > 0 else 0
+        avg_loss_pnl = losing_trades['pnl'].mean() if num_losing_trades > 0 else 0
+
+        # P/L Ratio: Average Profit / Average Loss (absolute value)
+        pl_ratio = abs(avg_win_pnl / avg_loss_pnl) if avg_loss_pnl != 0 else np.nan
+
+        # Avg Net Profit per trade
+        total_net_pnl = trade_df['pnl'].sum()
+        avg_net_profit = total_net_pnl / total_trades
+    else:
+        win_rate = 0
+        pl_ratio = np.nan
+        avg_net_profit = 0
+    # --- End enhanced trade metrics calculation ---
     
     # -------------------------------
     # 指标计算和日收益保存
@@ -145,6 +220,9 @@ def run_backtest(strategy_cls):
         f"夏普比率: {sharpe:.2f}\n"
         f"卡玛比率: {calmar:.2f}\n"
         f"最大回撤: {max_drawdown:.2%}\n"
+        f"胜率: {win_rate:.2f}%\n"
+        f"盈亏比: {pl_ratio:.2f}\n"
+        f"平均每笔净收益: {avg_net_profit:.4f}\n"
         f"{start_date} - {end_date}({days}天)"
     )
 
