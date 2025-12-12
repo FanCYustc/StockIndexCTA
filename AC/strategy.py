@@ -7,9 +7,9 @@ import pandas as pd
 
 class ACStrategy(BaseStrategy):
 
-    symbol = "IF"
-    n1 = 35
-    n2 = 135
+    symbol = "IM"
+    n1 = 20
+    n2 = 40
     name = f'{symbol}_AC_{n1}_{n2}'
     min_date = 20220101
 
@@ -97,10 +97,10 @@ class ACStrategy(BaseStrategy):
             # 2. 入场逻辑
             # 有信号则买入
             if buy_sigs[i]:
-                current_pos = 1
+                current_pos = -1
             # 有信号则卖出
             elif sell_sigs[i]:
-                current_pos = -1
+                current_pos = 1
             
             pos_arr[i] = current_pos
             
